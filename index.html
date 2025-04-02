@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Guessing Game</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+  <style>
+    body {
+      background: url('https://source.unsplash.com/1600x900/?nature,abstract') no-repeat center center fixed;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+    }
+    .game-container {
+      max-width: 90%;
+      width: 500px;
+      margin: 50px auto;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+    .word-box {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .word-box input {
+      width: 45px;
+      height: 45px;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      text-transform: uppercase;
+      border: 2px solid #6c757d;
+      border-radius: 5px;
+      margin: 5px;
+    }
+    .type-word {
+      width: 100%;
+      max-width: 300px;
+      height: 50px;
+      font-size: 20px;
+      text-align: center;
+      border: 2px solid #28a745;
+      border-radius: 5px;
+    }
+    .info {
+      font-size: 18px;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .wrong-guess {
+      color: red;
+    }
+    .remaining-chance {
+      color: blue;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1 class="text-success">Word Guessing Game</h1>
+    <label for="alphabet">Select an Alphabet:</label>
+    <select id="alphabet" class="form-select">
+      <option value="all">All</option>
+    </select>
+    <h4 class="help text-danger"></h4>
+    <div class="word-box"></div>
+    <input type="text" class="form-control type-word" placeholder="Enter a letter">
+    <p class="info"><b>Wrong Letters:</b> <span class="wrong-guess">None</span></p>
+    <p class="info"><b>Remaining Chances:</b> <span class="remaining-chance">0</span></p>
+    <button class="btn btn-success reset-now mt-3">Reset Game</button>
+  </div>
+  
+  <script>
+    const wordList = [
+      { word: "head", hint: "Invisible part of web page" },
+      { word: "body", hint: "Visible Part of Web page" },
+      { word: "html", hint: "HyperText Markup Language" },
+      { word: "css", hint: "Styling Language" },
+      { word: "angular", hint: "Single page Application language" },
+      { word: "programmer", hint: "A person who writes Programs" },
+      { word: "coder", hint: "A person who codes" },
+      { word: "coding", hint: "CodingStatus contains a programming word" },
+      { word: "ecommerce", hint: "Shopping Website" },
+      { word: "github", hint: "Code hosting platform" }
+    ];
+    
+    let wordInputs = document.querySelector(".word-box");
+    let help = document.querySelector(".help");
+    let remainingChance = document.querySelector(".remaining-chance");
+    let wrongLetter = document.querySelector(".wrong-guess");
+    let resetNow = document.querySelector(".reset-now");
+    let typeWord = document.querySelector(".type-word");
+    let alphabetSelect = document.getElementById("alphabet");
+    
+    let word = "";
+    let maxGuesses = 0;
+    let incorrectLetters = [];
+    let correctLetters = new Set();
+    
+    function populateAlphabetFilter() {
+      let letters = new Set(wordList.map(w => w.word[0].toUpperCase()));
+      letters.forEach(letter => {
+        let option = document.createElement("option");
+        option.value = letter.toLowerCase();
+        option.textContent = letter;
+        alphabetSelect.appendChild(option);
+      });
+    }
+    
+    function randomWord() {
+      let filteredWords = wordList.filter(w => alphabetSelect.value === "all" || w.word.startsWith(alphabetSelect.value));
+      let ranItem = filteredWords[Math.floor(Math.random() * filteredWords.length)];
+      word = ranItem.word.toLowerCase();
+      maxGuesses = word.length >= 4 ? 6 : 8;
+      correctLetters.clear();
+      incorrectLetters = [];
+      help.innerText = `Hint: ${ranItem.hint}`;
+      remainingChance.innerText = maxGuesses;
+      wrongLetter.innerText = "None";
+      wordInputs.innerHTML = "";
+      
+      for (let i = 0; i < word.length; i++) {
+        wordInputs.innerHTML += `<input type="text" disabled>`;
+      }
+    }
+    
+    function startGame(e) {
+      let key = e.key.toLowerCase();
+      if (key.match(/^[a-z]$/) && !incorrectLetters.includes(key) && !correctLetters.has(key)) {
+        if (word.includes(key)) {
+          for (let i = 0; i < word.length; i++) {
+            if (word[i] === key) {
+              correctLetters.add(key);
+              wordInputs.querySelectorAll("input")[i].value = key;
+            }
+          }
+        } else {
+          maxGuesses--;
+          incorrectLetters.push(key);
+        }
+        
+        remainingChance.innerText = maxGuesses;
+        wrongLetter.innerText = incorrectLetters.length ? incorrectLetters.join(", ") : "None";
+      }
+      
+      typeWord.value = "";
+      
+      setTimeout(() => {
+        if (correctLetters.size === new Set(word).size) {
+          help.innerText = `🎉 Congrats! You guessed the right word: ${word.toUpperCase()} 🎉`;
+        } else if (maxGuesses < 1) {
+          help.innerText = `❌ You lost! The word was: ${word.toUpperCase()} ❌`;
+          wordInputs.querySelectorAll("input").forEach((input, i) => (input.value = word[i]));
+        }
+      }, 100);
+    }
+    
+    populateAlphabetFilter();
+    randomWord();
+    resetNow.addEventListener("click", randomWord);
+    alphabetSelect.addEventListener("change", randomWord);
+    wordInputs.addEventListener("click", () => typeWord.focus());
+    document.addEventListener("keydown", () => typeWord.focus());
+    document.addEventListener("keyup", startGame);
+  </script>
+</body>
+</html>
